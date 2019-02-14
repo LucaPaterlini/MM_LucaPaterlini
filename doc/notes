@@ -1,0 +1,4 @@
+assumption 1. the system is designed only for th 100 mentioned ids,
+assumption 2. the system do not require a perm storage of the 100 ids generated
+strange 1. the endpoint do not have a permanent storage, do not store the
+
