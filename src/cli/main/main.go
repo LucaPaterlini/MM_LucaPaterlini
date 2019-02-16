@@ -19,7 +19,7 @@ import (
 )
 
 // postCallJson execute a Post call to the default url+path of LoRaWAN
-func postCallJson(DevEUI string,responseChannel chan<- responseAPInewDevEUI){
+func postCallJson(DevEUI string,responseChannel chan<- responseAPInewDevEUI, semaphoreW <-chan int){
 
 	// response initialization
 	responseItem := responseAPInewDevEUI{0,nil,DevEUI}
@@ -45,6 +45,8 @@ func postCallJson(DevEUI string,responseChannel chan<- responseAPInewDevEUI){
 	// just considering the statuscode
 	responseItem.sCode = res.StatusCode
 	responseChannel <- responseItem
+	fmt.Println("starting: ",DevEUI)
+	<-semaphoreW
 	return
 }
 
@@ -60,34 +62,45 @@ func randomHex(n int) (returnString string, err error) {
 }
 
 // routinesLauncher start the go routines with the limit of 1
-func routinesLauncher(suffix string, readerChannel chan<- responseAPInewDevEUI, redoChan <-chan int, semaphoreW chan int) {
-	for i := 0; ; i++ {
-		// reply all the wrong calls and breaks in case the redo channel is closed
-		// break if the channel is closed
-		if v,ok := <-redoChan; ok && v==1 {
 
-			// assembling the DevEUI and changing the case to uppercase
-			DevEUI := strings.ToUpper(suffix + fmt.Sprintf("%05x", i))
-			// inc the writers counter
-			semaphoreW <- 1
-			// start the routines
-			go postCallJson(DevEUI, readerChannel)
-			// dec the writers counters
-			<-semaphoreW
-		}
+func routinesLauncher(suffix string, readerChannel chan<- responseAPInewDevEUI,
+	redoChan <-chan int, term <-chan os.Signal) {
+	// create a semaphore
+	semaphoreW := make(chan int,MAXWRITERS)
+	// counter loops
+	i := 0
+
+	L:
+	// reply all the wrong calls and breaks in case the redo channel is closed
+	// break if the channel is closed
+	for range redoChan {
+
+		// assembling the DevEUI and changing the case to uppercase
+		DevEUI := strings.ToUpper(suffix + fmt.Sprintf("%05x", i))
+		// inc the writers counter
+		i++
+		select{
+			case <-term:
+				fmt.Println("stop pls")
+				close(readerChannel)
+				break L
+			default :
+				semaphoreW <- 1
+				go postCallJson(DevEUI, readerChannel,semaphoreW)
+			}
 	}
 }
 
+
 // responsesReader read from the readerChannel and write on redochan in case of errored calls
-func responsesReader(readerChannel <-chan responseAPInewDevEUI, redoChan chan<-int, wg *sync.WaitGroup){
+func responsesReader(readerChannel <-chan responseAPInewDevEUI, redoChan chan<- int,term chan<-os.Signal, wg *sync.WaitGroup){
 	// the counter for the output is general inside the function itself
 	i:=0
 	// dec the waiting group
-	defer wg.Done()
-	// recover from the panic and print all the remaining elements
 
-	for ; i<N;  {
-		item :=  <-readerChannel
+	defer wg.Done()
+	for item := range  readerChannel {
+
 		// Debug : && item.DevEUI[len(item.DevEUI)-1:]!="7"  append to the following condition to test
 		// in case there are no !200 responses from the endpoint
 		if item.err == nil && item.sCode == 200 && item.DevEUI[len(item.DevEUI)-1:]!="7" {
@@ -96,19 +109,9 @@ func responsesReader(readerChannel <-chan responseAPInewDevEUI, redoChan chan<-i
 		}else {
 			redoChan<-1
 		}
+		if i>=N { close(redoChan);return  }
 	}
-	close(redoChan)
-}
 
-// deathPreparation handle the signals and the kill phase
-func deathPreparation(sigs <-chan os.Signal, semaphoreW chan int){
-	sig:=<-sigs
-	fmt.Println(sig)
-	fmt.Println("killed")
-	if r := recover(); r != nil {
-		fmt.Println("Recovered in f", r)
-	}
-	os.Exit(1)
 }
 
 
@@ -134,17 +137,11 @@ func main() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM,syscall.SIGKILL)
 
-	// initialize channel for the semaphore mechanism
-	semaphoreW := make(chan int,MAXWRITERS)
-
-	// signals handler
-	go deathPreparation(sigs,semaphoreW)
-
 	// writers launcher
-	go routinesLauncher(suffix,readerChannel,redoChan,semaphoreW)
+	go routinesLauncher(suffix,readerChannel,redoChan,sigs)
 
 	// reader routine
-	go responsesReader(readerChannel,redoChan,&wg)
+	go responsesReader(readerChannel,redoChan,sigs,&wg)
 
 	wg.Wait()
 
