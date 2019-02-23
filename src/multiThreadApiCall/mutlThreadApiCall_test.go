@@ -66,12 +66,13 @@ func TestResponsesReader(t *testing.T) {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 
+	stdout := make(chan string)
 
 	go func (){
 		responseChannel<-data.ResponseAPInewDevEUI{200 ,nil ,"AAAAAAAAA000000" }
 		close(responseChannel)
 		}()
-	go ResponsesReader(responseChannel, redoChan, &wg)
+	go ResponsesReader(responseChannel, redoChan, &wg,stdout)
 
 	wg.Wait()
 

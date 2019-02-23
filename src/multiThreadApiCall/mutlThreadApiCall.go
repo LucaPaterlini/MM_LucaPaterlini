@@ -75,7 +75,6 @@ L:
 		i++
 		select {
 		case <-term:
-			fmt.Println("stop pls")
 			close(readerChannel)
 			break L
 		default:
@@ -86,7 +85,8 @@ L:
 }
 
 // responsesReader read from the readerChannel and write on redochan in case of errored calls
-func ResponsesReader(readerChannel <-chan data.ResponseAPInewDevEUI, redoChan chan<- int, wg *sync.WaitGroup) {
+func ResponsesReader(readerChannel <-chan data.ResponseAPInewDevEUI, redoChan chan<- int, wg *sync.WaitGroup,
+	stdout chan string) {
 	// the counter for the output is general inside the function itself
 	i := 0
 	// dec the waiting group
@@ -97,15 +97,16 @@ func ResponsesReader(readerChannel <-chan data.ResponseAPInewDevEUI, redoChan ch
 		// Debug : && item.DevEUI[len(item.DevEUI)-1:]!="7"  append to the following condition to test
 		// in case there are no !200 responses from the endpoint
 		if item.Err == nil && item.SCode == 200 && item.DevEUI[len(item.DevEUI)-1:] != "7" {
-			fmt.Printf("DevEUI #% 3d: %s\n", i, item.DevEUI)
+			temp:=fmt.Sprintf("DevEUI #% 3d: %s", i, item.DevEUI)
+			stdout<-temp
 			i++
 		} else {
 			redoChan <- 1
 		}
 		if i >= data.N {
 			close(redoChan)
+			close(stdout)
 			return
 		}
 	}
-
 }
