@@ -31,5 +31,6 @@ For your convince and only for linux users I have added 2 binaries inside /bin:
  
  - Increase test coverage
  - Check the "idiomatic go" rules
+ - Add the dockerfile
 
 
