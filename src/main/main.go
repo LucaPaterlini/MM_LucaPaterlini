@@ -8,8 +8,6 @@ import (
 	"fmt"
 )
 
-
-
 func main() {
 	fmt.Println(coreCli.Create100NewIds())
 }

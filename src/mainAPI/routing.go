@@ -2,6 +2,7 @@ package main
 
 import (
 	"../coreCli"
+	"../data"
 	"github.com/valyala/fasthttp"
 
 )
@@ -17,10 +18,7 @@ func routingHandler (ctx *fasthttp.RequestCtx){
 		middlewareEndpoint(ctx,coreCli.Create100NewIds)
 
 	default:
-		ctx.Error(ERRPATH,fasthttp.StatusNotFound)
+		ctx.Error(data.ERRPATH,fasthttp.StatusNotFound)
 
 	}
 }
-
-
-

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"../data"
 	"flag"
 	cors "github.com/AdhityaRamadhanus/fasthttpcors"
 	gocache "github.com/pmylund/go-cache"
@@ -11,7 +12,7 @@ import (
 )
 
 var (
-	addr = flag.String("addr",IPADDR+":"+strconv.Itoa(PORT),"TCP address to listen to")
+	addr = flag.String("addr",data.IPADDR+":"+strconv.Itoa(data.PORT),"TCP address to listen to")
 	compress = flag.Bool("compress",false, "Whether to enable transparent response compression ")
 	cache = gocache.New(1*time.Minute, 3*time.Minute)
 )
