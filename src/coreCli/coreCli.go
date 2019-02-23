@@ -4,6 +4,7 @@ import (
 	"../data"
 	"../multiThreadApiCall"
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/signal"
 	"runtime"
@@ -15,7 +16,7 @@ import (
 // the writers function and start the readers go routine, keeping a final loop to handle the print
 // of the reader go routine
 
-func Create100NewIds() string{
+func Create100NewIds(debug bool) string{
 	stdout := make(chan string)
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -48,6 +49,7 @@ func Create100NewIds() string{
 	var v []string
 	for item := range stdout {
 		v =append(v, item)
+		if debug {fmt.Println(item)}
 	}
 	urlsJson, _ := json.MarshalIndent(v,"","  ")
 	wg.Wait()

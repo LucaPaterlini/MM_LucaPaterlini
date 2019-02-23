@@ -5,9 +5,8 @@ package main
 
 import (
 	"../coreCli"
-	"fmt"
 )
 
 func main() {
-	fmt.Println(coreCli.Create100NewIds())
+	coreCli.Create100NewIds(true)
 }

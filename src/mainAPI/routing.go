@@ -15,7 +15,7 @@ func routingHandler (ctx *fasthttp.RequestCtx){
 
 	//Call n°0
 	case "/hello":
-		middlewareEndpoint(ctx,coreCli.Create100NewIds)
+		middlewareEndpoint(ctx,coreCli.Create100NewIds,false)
 
 	default:
 		ctx.Error(data.ERRPATH,fasthttp.StatusNotFound)

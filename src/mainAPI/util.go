@@ -21,9 +21,9 @@ func logPanics(function fasthttp.RequestHandler)fasthttp.RequestHandler{
 }
 
 // middlewareEndpoint handle the answers and using the memcache keep track of the previosly used endpoints
-func middlewareEndpoint(ctx *fasthttp.RequestCtx,f func()string){
+func middlewareEndpoint(ctx *fasthttp.RequestCtx,f func(bool)string,b bool){
 	key := string(ctx.Path()) + ctx.QueryArgs().String()
-	_ = cache.Add(key, f(), gocache.DefaultExpiration)
+	_ = cache.Add(key, f(b), gocache.DefaultExpiration)
 	response,_ := cache.Get(key)
 	_,_ = fmt.Fprint(ctx, fmt.Sprintf("%v",response))
 }
